@@ -51,6 +51,10 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
                 throw new Exception("AsyncTaskManager not init");
             }
             // TODO 业务处理
+            long sleepTime = asyncTaskManager.preExecuteCheck();
+            if (sleepTime > 0) {
+                TimeUnit.MICROSECONDS.sleep(sleepTime);
+            }
             callable.call();
 
             // TODO 业务处理
