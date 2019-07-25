@@ -2,8 +2,7 @@ package com.widely.funnel.async;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -21,34 +20,41 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
         super(corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue);
     }
 
-    @Override
-    protected void beforeExecute(Thread t, Runnable r) {
-        super.beforeExecute(t, r);
-        if (asyncTaskManager != null) {
-            long sleeptime = asyncTaskManager.preExecuteCheck();
-            if (sleeptime > 0) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(sleeptime);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+    private <T> Callable<T> newCallable(Callable<T> callable) {
+        return new FunnelCallable<T>(callable, asyncTaskManager);
     }
 
+    /**
+     * 重写该方法
+     * @param callable
+     * @param <T>
+     * @return
+     */
     @Override
-    protected void afterExecute(Runnable r, Throwable t) {
-        super.afterExecute(r, t);
-        if (asyncTaskManager == null) {
-            return;
+    protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+        return super.newTaskFor(newCallable(callable));
+    }
+
+    class FunnelCallable<T> implements Callable<T> {
+
+        private AsyncTaskManager asyncTaskManager;
+        private Callable<T> callable;
+
+        public FunnelCallable(Callable<T> callable, AsyncTaskManager asyncTaskManager) {
+            this.asyncTaskManager = asyncTaskManager;
+            this.callable = callable;
         }
-        // 睡眠 等待间隔执行
-        if (asyncTaskManager.getIntervalTime() > 0 && asyncTaskManager.getIntervalTimeUnit() != null) {
-            try {
-                asyncTaskManager.getIntervalTimeUnit().sleep(asyncTaskManager.getIntervalTime());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+        @Override
+        public T call() throws Exception {
+            if (asyncTaskManager == null) {
+                throw new Exception("AsyncTaskManager not init");
             }
+            // TODO 业务处理
+            callable.call();
+
+            // TODO 业务处理
+            return null;
         }
     }
 
