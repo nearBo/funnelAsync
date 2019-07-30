@@ -49,10 +49,8 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
             if (asyncTaskManager == null) {
                 throw new Exception("AsyncTaskManager not init");
             }
-            long sleepTime = asyncTaskManager.preSleep();
-            if (sleepTime > 0) {
-                TimeUnit.MICROSECONDS.sleep(sleepTime);
-            }
+            asyncTaskManager.preSleep();
+
             callable.call();
             // 睡眠 等待间隔执行
             asyncTaskManager.afterSleep();
@@ -73,6 +71,53 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
             this.threadCount = threadCount;
             this.limitTimes = limitSize;
         }
+
+        @Override
+        public void preSleep() throws Exception {
+            startTime.compareAndSet(0L, System.currentTimeMillis());
+            for (;;) {
+                int currentExecuteTimes = executeTimes.get();
+                if (currentExecuteTimes >= limitTimes) {
+
+                    long sleepTime = 0L;
+
+                    long startExecuteTime = startTime.get();
+                    long currentTime = System.currentTimeMillis();
+
+                    long alredyExecuteTime = currentTime - startExecuteTime;
+                    long limitTimeMills = timeUnit.toMillis(limitTime);
+                    // 线程执行次数，wait线程数还原
+                    reductionLimit();
+                    if (alredyExecuteTime < limitTimeMills) {
+                        sleepTime = limitTimeMills - alredyExecuteTime;
+                    }
+                    if (sleepTime > 0) {
+                        TimeUnit.MILLISECONDS.sleep(sleepTime);
+                    }
+                }
+                // 执行次数+1
+                executeTimes.compareAndSet(currentExecuteTimes, currentExecuteTimes + 1);
+            }
+        }
+
+        /**
+         * wait线程数+1，并且满足条件后线程执行次数，wait线程数还原
+         */
+        public void reductionLimit() {
+            for (;;) {
+                int currentExecuteTimes = executeTimes.get();
+                int waitTreads = threadinWaitCount.get();
+                if (threadinWaitCount.compareAndSet(waitTreads, waitTreads + 1)) {
+                    if (threadinWaitCount.get() == threadCount && currentExecuteTimes >= limitTimes) {
+                        // 设置为0，所用线程醒来后将重新计数
+                        executeTimes.set(0);
+                        threadinWaitCount.set(0);
+                        startTime.set(0);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     class AsyncIntervalTaskManager extends AbstractTaskManager {
@@ -89,6 +134,14 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
             this.threadCount = threadCount;
             this.intervalTime = intervalTime;
             this.intervalTimeUnit = intervalTimeUnit;
+        }
+
+        @Override
+        public void afterSleep() throws Exception {
+            // 睡眠 等待间隔执行
+            if (intervalTime > 0 && intervalTimeUnit != null) {
+                intervalTimeUnit.sleep(intervalTime);
+            }
         }
     }
 
