@@ -163,4 +163,14 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
         asyncTaskManager = new AsyncTaskManager(limitTime, timeUnit, limitSize, threadSize);
         return this;
     }
+
+    /**
+     * 自定义管理方式
+     * @param asyncTaskManager
+     * @return
+     */
+    public FunnelThreadPool buildAsyncManager(AbstractTaskManager asyncTaskManager) {
+        this.asyncTaskManager = asyncTaskManager;
+        return this;
+    }
 }
