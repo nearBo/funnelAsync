@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by zhangbo23 on 2019/7/26.
+ * Created by nearBo on 2019/7/26.
  */
 public abstract class AbstractTaskManager {
     /*** 限制时间长度 ***/
@@ -14,13 +14,8 @@ public abstract class AbstractTaskManager {
     protected TimeUnit timeUnit;
     /*** 限制时间内执行次数 ***/
     protected int limitTimes;
-    /*** 间隔执行时间 ***/
-    protected long intervalTime;
-    /*** 间隔执行时间单位 ***/
-    protected TimeUnit intervalTimeUnit;
     /*** 线程数量 ***/
     protected int threadCount;
-
 
     /*** 第一个线程第一个开始时间 ***/
     protected AtomicLong startTime = new AtomicLong(0);

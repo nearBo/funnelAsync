@@ -7,14 +7,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by zhangbo23 on 2019/7/24.
+ * Created by nearBo on 2019/7/24.
  * 漏桶算法，实现异步任务，针对调用其他服务有次数限制，执行限流
  */
 public class FunnelThreadPool extends ThreadPoolExecutor {
 
     private AbstractTaskManager asyncTaskManager;
 
-    public FunnelThreadPool(int corePoolSize, int maximumPoolSize,
+    private FunnelThreadPool(int corePoolSize, int maximumPoolSize,
                              long keepAliveTime, TimeUnit timeUnit,
                              BlockingQueue<Runnable> blockingQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue);
@@ -74,18 +74,18 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
 
         @Override
         public void preSleep() throws Exception {
-            startTime.compareAndSet(0L, System.currentTimeMillis());
+            this.startTime.compareAndSet(0L, System.currentTimeMillis());
             for (;;) {
-                int currentExecuteTimes = executeTimes.get();
-                if (currentExecuteTimes >= limitTimes) {
+                int currentExecuteTimes = this.executeTimes.get();
+                if (currentExecuteTimes >= this.limitTimes) {
 
                     long sleepTime = 0L;
 
-                    long startExecuteTime = startTime.get();
+                    long startExecuteTime = this.startTime.get();
                     long currentTime = System.currentTimeMillis();
 
                     long alredyExecuteTime = currentTime - startExecuteTime;
-                    long limitTimeMills = timeUnit.toMillis(limitTime);
+                    long limitTimeMills = this.timeUnit.toMillis(this.limitTime);
                     // 线程执行次数，wait线程数还原
                     reductionLimit();
                     if (alredyExecuteTime < limitTimeMills) {
@@ -96,7 +96,7 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
                     }
                 }
                 // 执行次数+1
-                executeTimes.compareAndSet(currentExecuteTimes, currentExecuteTimes + 1);
+                this.executeTimes.compareAndSet(currentExecuteTimes, currentExecuteTimes + 1);
             }
         }
 
@@ -105,14 +105,14 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
          */
         public void reductionLimit() {
             for (;;) {
-                int currentExecuteTimes = executeTimes.get();
-                int waitTreads = threadinWaitCount.get();
-                if (threadinWaitCount.compareAndSet(waitTreads, waitTreads + 1)) {
-                    if (threadinWaitCount.get() == threadCount && currentExecuteTimes >= limitTimes) {
+                int currentExecuteTimes = this.executeTimes.get();
+                int waitTreads = this.threadinWaitCount.get();
+                if (this.threadinWaitCount.compareAndSet(waitTreads, waitTreads + 1)) {
+                    if (this.threadinWaitCount.get() == this.threadCount && currentExecuteTimes >= this.limitTimes) {
                         // 设置为0，所用线程醒来后将重新计数
-                        executeTimes.set(0);
-                        threadinWaitCount.set(0);
-                        startTime.set(0);
+                        this.executeTimes.set(0);
+                        this.threadinWaitCount.set(0);
+                        this.startTime.set(0);
                     }
                     break;
                 }
@@ -123,66 +123,44 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
     class AsyncIntervalTaskManager extends AbstractTaskManager {
         /**
          * 间隔执行方式
-         * @param limitTime
-         * @param timeUnit
          * @param intervalTime
          * @param intervalTimeUnit
          */
-        public AsyncIntervalTaskManager(long limitTime, TimeUnit timeUnit, long intervalTime, TimeUnit intervalTimeUnit, int threadCount) {
-            this.limitTime = limitTime;
-            this.timeUnit = timeUnit;
-            this.threadCount = threadCount;
-            this.intervalTime = intervalTime;
-            this.intervalTimeUnit = intervalTimeUnit;
+        public AsyncIntervalTaskManager(long intervalTime, TimeUnit intervalTimeUnit) {
+            this.limitTime = intervalTime;
+            this.timeUnit = intervalTimeUnit;
         }
 
         @Override
         public void afterSleep() throws Exception {
             // 睡眠 等待间隔执行
-            if (intervalTime > 0 && intervalTimeUnit != null) {
-                intervalTimeUnit.sleep(intervalTime);
+            if (this.limitTime > 0 && this.timeUnit != null) {
+                this.timeUnit.sleep(this.limitTime);
             }
         }
     }
 
-    private long limitTime;
-    private TimeUnit limitTimeUnit;
-
-    private long intervalTime;
-    private TimeUnit intervalTimeUnit;
-
-    private int limitSize;
-    private boolean asyncType = false;
-
-    public FunnelThreadPool setLimitTime(long limitTime, TimeUnit timeUnit) {
-        this.limitTime = limitTime;
-        this.limitTimeUnit = timeUnit;
+    /**
+     * 设置间隔执行方式manager
+     * @param limitTime
+     * @param timeUnit
+     * @return
+     */
+    public FunnelThreadPool buildAsyncIntervalManager(long limitTime, TimeUnit timeUnit) {
+        asyncTaskManager = new AsyncIntervalTaskManager(limitTime, timeUnit);
         return this;
     }
 
-    public FunnelThreadPool setLimitSize(int size) {
-        this.limitSize = size;
-        return this;
-    }
-
-    public FunnelThreadPool setIntervalTime(long intervalTime, TimeUnit timeUnit) {
-        this.intervalTime = intervalTime;
-        this.intervalTimeUnit = timeUnit;
-        return this;
-    }
-
-    public FunnelThreadPool setAsyncType(boolean isInterval) {
-        this.asyncType = isInterval;
-        return this;
-    }
-
-    public FunnelThreadPool build() {
+    /**
+     * 设置非间隔方式manager
+     * @param limitTime
+     * @param timeUnit
+     * @param limitSize
+     * @return
+     */
+    public FunnelThreadPool buildAsyncManager(long limitTime, TimeUnit timeUnit, int limitSize) {
         int threadSize = super.getCorePoolSize() + super.getMaximumPoolSize();
-        if (asyncType) {
-            asyncTaskManager = new AsyncIntervalTaskManager(limitTime, limitTimeUnit, intervalTime, intervalTimeUnit, threadSize);
-        } else {
-            asyncTaskManager = new AsyncTaskManager(limitTime, limitTimeUnit, limitSize, threadSize);
-        }
+        asyncTaskManager = new AsyncTaskManager(limitTime, timeUnit, limitSize, threadSize);
         return this;
     }
 }
