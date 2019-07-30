@@ -10,13 +10,13 @@ import java.util.concurrent.TimeUnit;
  * Created by nearBo on 2019/7/24.
  * 漏桶算法，实现异步任务，针对调用其他服务有次数限制，执行限流
  */
-public class FunnelThreadPool extends ThreadPoolExecutor {
+public class FunnelThreadPoolExecutor extends ThreadPoolExecutor {
 
     private AbstractTaskManager asyncTaskManager;
 
-    private FunnelThreadPool(int corePoolSize, int maximumPoolSize,
-                             long keepAliveTime, TimeUnit timeUnit,
-                             BlockingQueue<Runnable> blockingQueue) {
+    private FunnelThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
+                                     long keepAliveTime, TimeUnit timeUnit,
+                                     BlockingQueue<Runnable> blockingQueue) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue);
     }
 
@@ -146,7 +146,7 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
      * @param timeUnit
      * @return
      */
-    public FunnelThreadPool buildAsyncIntervalManager(long limitTime, TimeUnit timeUnit) {
+    public FunnelThreadPoolExecutor buildAsyncIntervalManager(long limitTime, TimeUnit timeUnit) {
         asyncTaskManager = new AsyncIntervalTaskManager(limitTime, timeUnit);
         return this;
     }
@@ -158,7 +158,7 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
      * @param limitSize
      * @return
      */
-    public FunnelThreadPool buildAsyncManager(long limitTime, TimeUnit timeUnit, int limitSize) {
+    public FunnelThreadPoolExecutor buildAsyncManager(long limitTime, TimeUnit timeUnit, int limitSize) {
         int threadSize = super.getCorePoolSize() + super.getMaximumPoolSize();
         asyncTaskManager = new AsyncTaskManager(limitTime, timeUnit, limitSize, threadSize);
         return this;
@@ -169,7 +169,7 @@ public class FunnelThreadPool extends ThreadPoolExecutor {
      * @param asyncTaskManager
      * @return
      */
-    public FunnelThreadPool buildAsyncManager(AbstractTaskManager asyncTaskManager) {
+    public FunnelThreadPoolExecutor buildAsyncManager(AbstractTaskManager asyncTaskManager) {
         this.asyncTaskManager = asyncTaskManager;
         return this;
     }
