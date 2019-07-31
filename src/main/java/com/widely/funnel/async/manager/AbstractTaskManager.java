@@ -1,4 +1,4 @@
-package com.widely.funnel.async;
+package com.widely.funnel.async.manager;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
