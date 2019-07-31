@@ -13,3 +13,5 @@
    <br/>
     一直执行，直到达到limitsize--》等待下个时间单位<br/>
    executor.funnelSubmit(callable, manager);<br/>
+   普通任务提交方式<br/>
+   executor.submit(callable);
