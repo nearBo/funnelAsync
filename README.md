@@ -6,8 +6,8 @@
    
 使用方法：<br/>
    FunnelThreadPoolExecutor executor <br/>
-   = new FunnelThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit,blockingQueue);
-   这里 创建AbstractTaskManager实例，每个实例的构造方式可以不同
+   = new FunnelThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit,blockingQueue);<br/>
+   这里 创建AbstractTaskManager实例，每个实例的构造方式可以不同<br/>
    AbstractTaskManager manager  <br/>
    = new AsyncTaskManager(long limitTime, TimeUnit timeUnit, int limitSize, executor)
    <br/>
