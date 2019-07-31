@@ -7,12 +7,9 @@
 使用方法：<br/>
    FunnelThreadPoolExecutor executor <br/>
    = new FunnelThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit,blockingQueue);
+   这里 创建AbstractTaskManager实例，每个实例的构造方式可以不同
+   AbstractTaskManager manager  <br/>
+   = new AsyncTaskManager(long limitTime, TimeUnit timeUnit, int limitSize, executor)
    <br/>
-   线程间隔执行任务管理器<br/>
-   executor.buildAsyncIntervalManager(long limitTime, TimeUnit timeUnit);<br/>
-   <br/>
-   一直执行，直到达到limitsize--》等待下个时间单位<br/>
-   executor.buildAsyncManager(long limitTime, TimeUnit timeUnit, int limitSize);<br/>
-   <br/>
-   自定义管理器实现<br/>
-   executor.buildAsyncManager(AbstractTaskManager asyncTaskManager);<br/>
+    一直执行，直到达到limitsize--》等待下个时间单位<br/>
+   executor.funnelSubmit(callable, manager);<br/>
