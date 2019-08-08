@@ -43,7 +43,7 @@ public class AsyncTaskManager extends AbstractTaskManager {
                     sleepTime = limitTimeMills - alredyExecuteTime;
                 }
                 if (sleepTime > 0) {
-                    TimeUnit.MILLISECONDS.sleep(sleepTime);
+                    TimeUnit.MILLISECONDS.wait(sleepTime);
                 }
             }
             // 执行次数+1

@@ -5,6 +5,7 @@ import com.widely.funnel.async.manager.AbstractTaskManager;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -14,14 +15,19 @@ import java.util.concurrent.TimeUnit;
  */
 public class FunnelThreadPoolExecutor extends ThreadPoolExecutor {
 
-    private FunnelThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
-                                     long keepAliveTime, TimeUnit timeUnit,
-                                     BlockingQueue<Runnable> blockingQueue) {
+    private AbstractTaskManager abstractTaskManager;
+
+    public FunnelThreadPoolExecutor(int corePoolSize, int maximumPoolSize,
+                                    long keepAliveTime, TimeUnit timeUnit,
+                                    BlockingQueue<Runnable> blockingQueue, AbstractTaskManager abstractTaskManager) {
         super(corePoolSize, maximumPoolSize, keepAliveTime, timeUnit, blockingQueue);
+        this.abstractTaskManager = abstractTaskManager;
     }
 
-    public Future<?> funnelSubmit(Callable<?> callable, AbstractTaskManager asyncTaskManager) {
-        return super.submit(funnelCallable(callable, asyncTaskManager));
+    @Override
+    protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
+        Callable newCallable = funnelCallable(callable, abstractTaskManager);
+        return super.newTaskFor(newCallable);
     }
 
     /**

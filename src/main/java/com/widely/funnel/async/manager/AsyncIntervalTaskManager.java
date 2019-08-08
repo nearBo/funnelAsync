@@ -20,7 +20,7 @@ public class AsyncIntervalTaskManager extends AbstractTaskManager {
     public void afterSleep() throws Exception {
         // 睡眠 等待间隔执行
         if (this.limitTime > 0 && this.timeUnit != null) {
-            this.timeUnit.sleep(this.limitTime);
+            this.timeUnit.wait(this.limitTime);
         }
     }
 }
